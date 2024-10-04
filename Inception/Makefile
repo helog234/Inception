@@ -12,11 +12,17 @@
 
 all: up
 
-up: 
-	@docker-compose -f ./srcs/docker-compose.yml up -d
+up:
+	docker-compose -f ./srcs/docker-compose.yml up -d --build
 
-down: 
-	@docker-compose -f ./srcs/docker-compose.yml down
+build:
+	docker-compose -f ./srcs/docker-compose.yml up -d --build
+
+down:
+	docker-compose -f ./srcs/docker-compose.yml down
+
+restart:
+	docker-compose -f ./srcs/docker-compose.yml down && docker-compose -f ./srcs/docker-compose.yml up -d
 
 stop: 
 	@docker-compose -f ./srcs/docker-compose.yml stop

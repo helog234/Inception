@@ -4,34 +4,36 @@ services:
   mariadb:
     container_name: mariadb
     networks:
-      - inception # network auquel il appartient
-    build: requirements/mariadb  # instruction pour construire le docker (ou trouver dockerfile etc)
-    env_file: .env #le fichier d'environnement pour transmettre les variables
+      - inception
+    build: requirements/mariadb
+    env_file:
+      - .env
     secrets:
-      - sql_password
-      - sql_root_password
-    environment:
-      SQL_PASSWORD: /run/secrets/sql_password
-      SQL_ROOT_PASSWORD: /run/secrets/sql_root_password
+      - db_password
+      - db_root_password
+      - wp_super_password
     volumes: 
       - mariadb:/var/lib/mysql
-    restart: unless-stopped  # redémarre tant qu'il n'est pas stoppé 
-    expose:  # le port interne à exposer sans le mapper à l'hôte
-      - "3306"
+    command: /bin/bash -c "/tmp/init-db.sh"
+    stdin_open: true  # Required to keep stdin open
+    tty: true         # Allocates a pseudo-TTY
+    #command: mysqld_safe --skip-grant-tables  # <-- Add this line temporarily
+    restart: unless-stopped
 
   nginx:
     container_name: nginx
     networks:
       - inception
-    depends_on: #indique de ne pas démarrer nginx tant que wp n'a pas démarré
+    depends_on:
       - wordpress
     build: requirements/nginx
-    env_file: .env
+    env_file:
+      - .env
     volumes: 
       - wordpress:/var/www/wordpress
     ports:
-      - "443:443" # on indique le port qui sera exposé a la machine locale
-    restart: on-failure  #redémarrer a uniquement en cas de crash.
+      - "443:443"   # Expose le port HTTPS pour accès externe
+    restart: on-failure
 
   wordpress:
     container_name: wordpress
@@ -39,38 +41,47 @@ services:
       - inception
     depends_on:
       - mariadb
+    build: requirements/wordpress
     env_file:
       - .env
     secrets:
-      - wp_boss_password
+      - wp_super_password
       - wp_random_password
-      - sql_password
-    environment:
-      WP_ADMIN_PASSWORD: /run/secrets/wp_boss_password
-      WP_SECOND_USER_PASSWORD: /run/secrets/wp_random_password
-      SQL_PASSWORD: /run/secrets/sql_password
+      - db_password
     volumes: 
       - wordpress:/var/www/wordpress
     ports:
-      - "9000"
+      - "9000"    # WordPress tourne sur le port 9000 pour PHP-FPM
+    command: /bin/bash -c "/usr/local/bin/wp-setup.sh"
+    stdin_open: true  # Required to keep stdin open
+    tty: true         # Allocates a pseudo-TTY
     restart: on-failure
 
 volumes:
   wordpress:
-    driver: local #stocker le volume en local
+    driver: local
     driver_opts:
       type: 'none'
       o: 'bind'
-      device: '/Users/login/data/wordpress' #ou stocker le dossier en local
+      device: '/Users/login/data/wordpress'
   mariadb:
     driver: local
     driver_opts:
-      type: 'none' 
-      o: 'bind'	 # ?? à quoi ca sert?
+      type: 'none'
+      o: 'bind'
       device: '/Users/login/data/mariadb'
 
 networks:
-    inception:
-    driver: bridge #bridge=défaut, cela permet de ne pas isoler les container
-                   #et de leur permettre de communiquet entre eux
-					
+  inception:
+    name: inception
+    driver: bridge  # Tous les services partagent ce réseau pour communiquer
+
+secrets:
+  db_password:
+    file: ../secrets/db_password.txt
+  db_root_password:
+    file: ../secrets/db_root_password.txt
+  wp_super_password:
+    file: ../secrets/wp_super_password.txt
+  wp_random_password:
+    file: ../secrets/wp_random_password.txt
