@@ -1,4 +1,5 @@
 #version: '3.8'
+#n'est visiblement plus nécessaire retiré à cause warning en construisant
 
 services:
   mariadb:
@@ -15,11 +16,10 @@ services:
     volumes:
       - mariadb:/var/lib/mysql
     command: /bin/bash -c "/tmp/init-db.sh"
-    stdin_open: true  # Required to keep stdin open
-    tty: true         # Allocates a pseudo-TTY
-    #command: mysqld_safe --skip-grant-tables  # <-- Add this line temporarily
+    stdin_open: true  # Required to keep stdin open//enlever ?
+    tty: true         # Allocates a pseudo-TTY//enlever ?
     restart: unless-stopped
-    healthcheck:
+    healthcheck: #ping mariadb régulièrement pour vérifier si actif et éviter que wp n'essaie de se connecter trop tôt
        test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
        interval: 5s
        timeout: 5s
@@ -37,7 +37,7 @@ services:
     volumes: 
       - wordpress:/var/www/wordpress
     ports:
-      - "443:443"   # Expose le port HTTPS pour accès externe
+      - "443:443"   #expose le port HTTPS
     restart: on-failure
 
   wordpress:
@@ -57,15 +57,20 @@ services:
     volumes: 
       - wordpress:/var/www/wordpress
     ports:
-      - "9000"    # WordPress tourne sur le port 9000 pour PHP-FPM
+      - "9000"    # Worwp tourne sur le port 9000 pour PHP-FPM (FastCGI Process Manager)
     command: /bin/bash -c "/usr/local/bin/wp-setup.sh"
-    stdin_open: true  # Required to keep stdin open
-    tty: true         # Allocates a pseudo-TTY
+    stdin_open: true  # Required to keep stdin open//enlever ?
+    tty: true         # Allocates a pseudo-TTY//enlever ?
     restart: on-failure
 
+#local=stocké localement sur le système hote
+#o=option de montage du volume
+#bind=créé une liaison (bind mount) entre un répertoire de l'hote et le conteneur
+#cela permet de mieux communiquer avec l'hote
+#avantage volumes : persistance des données 
 volumes:
   wordpress:
-    driver: local
+    driver: local 
     driver_opts:
       type: 'none'
       o: 'bind'
@@ -80,7 +85,7 @@ volumes:
 networks:
   inception:
     name: inception
-    driver: bridge  # Tous les services partagent ce réseau pour communiquer
+    driver: bridge  # les services partagent ce réseau pour communiquer
 
 secrets:
   db_password:
