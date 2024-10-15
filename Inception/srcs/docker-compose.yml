@@ -1,4 +1,4 @@
-version: '3.8'
+#version: '3.8'
 
 services:
   mariadb:
@@ -12,13 +12,18 @@ services:
       - db_password
       - db_root_password
       - wp_super_password
-    volumes: 
+    volumes:
       - mariadb:/var/lib/mysql
     command: /bin/bash -c "/tmp/init-db.sh"
     stdin_open: true  # Required to keep stdin open
     tty: true         # Allocates a pseudo-TTY
     #command: mysqld_safe --skip-grant-tables  # <-- Add this line temporarily
     restart: unless-stopped
+    healthcheck:
+       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+       interval: 5s
+       timeout: 5s
+       retries: 5
 
   nginx:
     container_name: nginx
@@ -40,7 +45,8 @@ services:
     networks:
       - inception
     depends_on:
-      - mariadb
+      mariadb:
+        condition: service_healthy
     build: requirements/wordpress
     env_file:
       - .env
@@ -63,13 +69,13 @@ volumes:
     driver_opts:
       type: 'none'
       o: 'bind'
-      device: '/Users/login/data/wordpress'
+      device: '/home/user/data/wordpress'
   mariadb:
     driver: local
     driver_opts:
       type: 'none'
       o: 'bind'
-      device: '/Users/login/data/mariadb'
+      device: '/home/user/data/mariadb'
 
 networks:
   inception:
