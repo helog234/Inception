@@ -7,6 +7,7 @@ services:
     networks:
       - inception
     build: requirements/mariadb
+    image: mariadb
     env_file:
       - .env
     secrets:
@@ -32,6 +33,7 @@ services:
     depends_on:
       - wordpress
     build: requirements/nginx
+    image: nginx
     env_file:
       - .env
     volumes: 
@@ -48,6 +50,7 @@ services:
       mariadb:
         condition: service_healthy
     build: requirements/wordpress
+    image: wordpress
     env_file:
       - .env
     secrets:
