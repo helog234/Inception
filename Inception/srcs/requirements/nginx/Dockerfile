@@ -3,7 +3,7 @@ FROM alpine:3.19
 # installation de nginx et openssl et bash
 #nginx est le serveur permettant de servir les données pour wp et mariadb
 #openSSL permet de générer le certificat ssl qui permet lui-même se se connecter en https
-RUN apk update && apk add --no-cache nginx openssl bash
+RUN apk update && apk add --no-cache nginx openssl bash tini
 
 #Créer le dossier pour les certificats ssl
 #ajout de -p pour les dossiers liés si non-présents
@@ -34,5 +34,5 @@ COPY conf/nginx.conf /etc/nginx/nginx.conf
 EXPOSE 443
 
 # lancer nginx en avant-plan pour éviter que le conteneur s'arrete
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["/sbin/tini", "--", "nginx", "-g", "daemon off;"]
 

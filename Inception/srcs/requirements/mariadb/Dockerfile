@@ -1,18 +1,8 @@
 FROM alpine:3.19
 
-# # Install MariaDB
-# RUN		apk update && apk upgrade &&\
-# 		apk add mariadb mariadb-client
+# Installer mariadb et mariadb client et tini (PID1)
+RUN apk -U upgrade && apk add --no-cache mariadb mariadb-client tini
 
-# # Copy MariaDB configuration files
-# COPY	./tools/init-db.sh /tmp/init-db.sh
-# # COPY	./tools/init.sql /tmp/init.sql
-# RUN		chmod +x /tmp/init-db.sh
-
-# # Run MariaDB configuration script as entry point
-# ENTRYPOINT	[ "sh", "/tmp/init-db.sh" ]
-# Installer mariadb et mariadb client
-RUN apk -U upgrade && apk add mariadb mariadb-client
 
 #initialiser le nouveau répertoir en mode root
 #--datadir=/var/lib/mysql= fichiers de base stocké dans /var/lib/mysql ce sera
@@ -28,4 +18,6 @@ COPY ./tools/init-db.sh /tmp/init-db.sh
 COPY ./tools/init.sql /tmp/init.sql
 
 #entrée du conteneur exécuté via le script
-ENTRYPOINT	[ "sh", "/tmp/init-db.sh" ]
+# en ustilisant tini comme init pour éviter les problèmes PID 1
+ENTRYPOINT ["/sbin/tini", "--", "sh", "/tmp/init-db.sh"]
+

@@ -14,7 +14,8 @@ RUN apk update && apk add --no-cache \
     php82-zip \
     php82-openssl \
     mariadb-client \
-    curl bash less
+    curl bash less \
+    tini
 
 # s'assure que le port d'écoute des requetres serveurs est celui que l'on veut
 RUN sed -i 's/listen = 127.0.0.1:9000/listen = 9000/g' /etc/php82/php-fpm.d/www.conf
@@ -42,6 +43,6 @@ RUN chmod +x /usr/local/bin/wp-setup.sh
 EXPOSE 9000
 
 # Lance le script de configuration à chaque démarrage
-ENTRYPOINT [ "sh", "/usr/local/bin/wp-setup.sh" ]
+ENTRYPOINT ["/sbin/tini", "--", "sh", "/usr/local/bin/wp-setup.sh"]
 
 
